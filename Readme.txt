@@ -9,3 +9,6 @@ hold LMB to spray, and enjoy 'cuz it's swimmable.
 or place it, then light canister with torch, for a foamy explosion!
 
 ride the foam like Silver Surfer!
+
+requires:  default, bucket, and vector_extras
+https://github.com/HybridDog/vector_extras
