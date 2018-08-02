@@ -1,4 +1,4 @@
-local range = 100
+local range = 15
 local v = 1
 local a = 100
 local speed = 0.1 --0 or less for default maximum speed
@@ -19,13 +19,13 @@ local function spray_foam(pos)
 				end
 				local nn = minetest.get_node(p).name
 				if nn == "fire:basic_flame" then
-					minetest.set_node(p, {name="extinguisher:foam"})
+					minetest.set_node(p, {name="party_foam:foam"})
 					minetest.sound_play("fire_extinguish_flame",
 						{pos = p, max_hear_distance = 16, gain = 0.15})
 					minetest.check_for_falling(p)
 				elseif math.random(0,3) >= 1 then
 					if nn == "air" then
-						minetest.set_node(p, {name="extinguisher:foam"})
+						minetest.set_node(p, {name="party_foam:foam"})
 						minetest.check_for_falling(p)
 					elseif nn == "default:lava_source" then
 						minetest.set_node(p, {name="default:obsidian"})
@@ -76,41 +76,6 @@ local function extinguish(player)
 end
 
 
---[[
-local function table_empty(t)
-	for _,_ in pairs(t) do
-		return false
-	end
-	return true
-end
-
-local function get_tab(pos)
-	local tab_tmp = {pos}
-	local tab_avoid = {[pos.x.." "..pos.y.." "..pos.z] = true}
-	local tab_done,num = {pos},2
-	while not table_empty(tab_tmp) do
-		for n,p in pairs(tab_tmp) do
-			tab_tmp[n] = nil
-			for z = -2,2 do
-				for y = -2,2 do
-					for x = -2,2 do
-						local p2 = {x=pos.x+x, y=pos.y+y, z=pos.z+z}
-						local pstr = p2.x.." "..p2.y.." "..p2.z
-						if not tab_avoid[pstr]
-						and minetest.get_node(p2).name == "fire:basic_flame" then
-							tab_avoid[pstr] = true
-							tab_done[num] = p2
-							num = num+1
-							table.insert(tab_tmp, p2)
-						end
-					end
-				end
-			end
-		end
-	end
-	return tab_done
-end]]
-
 local function stop_all_fire_sounds()
 	local players = minetest.get_connected_players()
 	for i = 1, #players do
@@ -122,7 +87,7 @@ local c_fire, c_foam, c_lava, c_lavaf, c_obsidian, c_cobble
 local function extinguish_fire(pos)
 	local t1 = os.clock()
 	c_fire = c_fire or minetest.get_content_id("fire:basic_flame")
-	c_foam = c_foam or minetest.get_content_id("extinguisher:foam")
+	c_foam = c_foam or minetest.get_content_id("party_foam:foam")
 	c_lava = c_lava or minetest.get_content_id("default:lava_source")
 	c_lavaf = c_lavaf or minetest.get_content_id("default:lava_flowing")
 	c_cobble = c_cobble or minetest.get_content_id("default:cobble")
@@ -160,11 +125,11 @@ local function extinguish_fire(pos)
 end
 
 local function eexpl(pos)
-	if minetest.get_node(pos).name ~= "extinguisher:automatic" then
+	if minetest.get_node(pos).name ~= "party_foam:automatic" then
 		return
 	end
 	minetest.sound_play("extinguisher_explosion", {pos=pos})
-	minetest.set_node(pos, {name="extinguisher:destroyed"})
+	minetest.set_node(pos, {name="party_foam:destroyed"})
 	local startpos = minetest.find_node_near(pos, 2, {"fire:basic_flame"})
 	if not startpos then
 		return
@@ -173,28 +138,57 @@ local function eexpl(pos)
 end
 
 
-minetest.register_node("extinguisher:foam", {
+minetest.register_node("party_foam:foam", {
 	drawtype = "nodebox",
 	paramtype = "light",
-	node_box = {
-		type = "fixed",
-		fixed = {
-			{-0.5, -0.5, -0.5, 0.5, 0.5, 0.5},
-		}
-	},
-	use_texture_alpha = true,
+	paramtype2 = "flowingliquid",
+	alpha = 50,
 	tiles = {"extinguisher_foam.png"},
+  drawtype  = 'nodebox',
+  node_box  = {
+    type   = 'fixed',
+    fixed  = {
+     --  x1,    y1,    z1,    x2,    y2,   z2
+      { -0.5,  -0.5,  -0.5,  -0.4,  -0.4,  -0.4 },
+      { -0.5,  -0.5,   0.5,  -0.4,  -0.4,   0.4 },
+      { -0.5,   0.5,  -0.5,  -0.4,   0.4,  -0.4 },
+
+      { -0.4,  -0.4,  -0.4,  -0.2,  -0.2,  -0.2 },
+      { -0.4,  -0.4,   0.4,  -0.2,  -0.2,   0.2 },
+      { -0.4,   0.4,  -0.4,  -0.2,   0.2,  -0.2 },
+
+      { -0.2,  -0.2,  -0.2,   0.2,   0.2,   0.2 },
+
+      {  0.4,   0.4,  -0.4,   0.2,   0.2,  -0.2 },
+      {  0.4,  -0.4,   0.4,   0.2,  -0.2,   0.2 },
+      {  0.4,   0.4,   0.4,   0.2,   0.2,   0.2 },
+
+      {  0.5,   0.5,  -0.5,   0.4,   0.4,  -0.4 },
+      {  0.5,  -0.5,   0.5,   0.4,  -0.4,   0.4 },
+      {  0.5,   0.5,   0.5,   0.4,   0.4,   0.4 },
+    }, -- fixed
+  }, -- node_box
+	liquid_viscosity = 4,
+  liquidtype = "flowing",
+  liquid_alternative_flowing = "party_foam:foam",
+  liquid_alternative_source = "party_foam:foam",
+  liquid_renewable = true,
+  liquid_range = 5,
+  walkable = false,
+  drowning = 1,
 	drop = "",
-	groups = {dig_immediate=3, puts_out_fire=1, not_in_creative_inventory=1, falling_node=1},
+	groups = {water = 3000, liquid = 3000, dig_immediate=3, puts_out_fire=1,
+	          cools_lava = 1, not_in_creative_inventory=1},
+	post_effect_color = {a=30, r=200, g=200, b=200},
 })
 
 local adtime = 0
 local time = minetest.get_us_time()
 local count = 0
 minetest.register_abm({
-	nodenames = {"extinguisher:foam"},
-	interval = 5,
-	chance = 5,
+	nodenames = {"party_foam:foam"},
+	interval = 4,
+	chance = 6,
 	catch_up = false,
 	action = function(pos)
 		count = count+1
@@ -212,7 +206,7 @@ minetest.register_abm({
 	end,
 })
 
-minetest.register_node("extinguisher:automatic", {
+minetest.register_node("party_foam:automatic", {
 	description = "Extinguisher",
 	tiles = {"extinguisher.png"},
 	inventory_image = "extinguisher.png",
@@ -231,7 +225,7 @@ minetest.register_node("extinguisher:automatic", {
 	end,
 })
 
-minetest.register_node("extinguisher:destroyed", {
+minetest.register_node("party_foam:destroyed", {
 	tiles = {"extinguisher_destroyed.png"},
 	drawtype = "plantlike",
 	paramtype = "light",
@@ -250,83 +244,46 @@ minetest.register_globalstep(function(dtime)
 	end
 	timer = 0
 	for _,player in pairs(minetest.get_connected_players()) do
-		if player:get_wielded_item():get_name() == "extinguisher:automatic"
+		if player:get_wielded_item():get_name() == "party_foam:automatic"
 		and player:get_player_control().LMB then
 			extinguish(player)
 		end
 	end
 end)
 
-minetest.register_craftitem("extinguisher:foam_ingredient_1", {
-	description = "Foam Ingredient",
-	inventory_image = "extinguisher_essence_1.png",
-})
-
-minetest.register_craftitem("extinguisher:foam_ingredient_2", {
+minetest.register_craftitem("party_foam:foam_ingredient", {
 	description = "Foam Ingredient",
 	inventory_image = "extinguisher_essence_2.png",
 })
 
-minetest.register_craftitem("extinguisher:foam_bucket", {
+minetest.register_craftitem("party_foam:foam_bucket", {
 	description = "Foam",
 	inventory_image = "extinguisher_foam_bucket.png",
 })
 
 minetest.register_craft({
-	output = "extinguisher:foam_ingredient_1 2",
+	output = "party_foam:foam_ingredient",
 	recipe = {
 		{"default:stone"},
-		{"poisonivy:climbing"},
+		{"bucket:bucket_lava"},
 		{"default:stone"},
 	},
 	replacements = {{"default:stone", "default:stone"}, {"default:stone", "default:stone"}},
 })
 
 minetest.register_craft({
-	output = "extinguisher:foam_ingredient_2",
+	output = "party_foam:foam_bucket",
 	recipe = {
-		{"default:stone"},
-		{"poisonivy:seedling"},
-		{"default:stone"},
-	},
-	replacements = {{"default:stone", "default:stone"}, {"default:stone", "default:stone"}},
-})
-
-minetest.register_craft({
-	output = "extinguisher:foam_ingredient_2 3",
-	recipe = {
-		{"default:stone"},
-		{"poisonivy:sproutling"},
-		{"default:stone"},
-	},
-	replacements = {{"default:stone", "default:stone"}, {"default:stone", "default:stone"}},
-})
-
-minetest.register_craft({
-	output = "extinguisher:foam_bucket",
-	recipe = {
-		{"extinguisher:foam_ingredient_1"},
-		{"extinguisher:foam_ingredient_2"},
+		{"party_foam:foam_ingredient"},
 		{"bucket:bucket_water"},
 	},
 })
 
 minetest.register_craft({
-	output = "extinguisher:foam_bucket",
-	recipe = {
-		{"extinguisher:foam_ingredient_2"},
-		{"extinguisher:foam_ingredient_1"},
-		{"bucket:bucket_water"},
-	},
-})
-
-minetest.register_craft({
-	output = "extinguisher:automatic",
+	output = "party_foam:automatic",
 	recipe = {
 		{"group:stick", "", ""},
 		{"default:steel_ingot", "group:stick", "group:stick"},
-		{"extinguisher:foam_bucket", "", ""},
+		{"party_foam:foam_bucket", "", ""},
 	},
 })
-
-
